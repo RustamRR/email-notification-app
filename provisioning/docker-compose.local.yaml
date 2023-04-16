@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  php:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    container_name: "ena-php"
+    working_dir: "/var/www/app"
+    volumes:
+      - "../app:/var/www/app"
+    depends_on:
+      - rabbitmq
+      - db
+    env_file:
+      - .env
+    tty: true
+    stdin_open: true
+    command: bash -c "composer install && supervisord -n -c /etc/supervisor/supervisord.conf"
+
+  db:
+    platform: linux/x86_64
+    image: "percona"
+    container_name: "ena-db"
+    restart: always
+    volumes:
+      - "./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql"
+    env_file:
+      - .env
+    ports:
+      - "31306:3306"
+
+  rabbitmq:
+    image: rabbitmq:3.8-management-alpine
+    container_name: "ena-rabbit"
+    hostname: rabbitmq
+    ports:
+      - "15672:15672"
+      - "5672:5672"
+    env_file:
+      - .env
